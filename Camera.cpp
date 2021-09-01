@@ -111,39 +111,4 @@ void Camera::Inputs(GLFWwindow* window)
 		firstClick = true;
 	}
 }
-	
-void Camera::InputsCallback(int key, int action)
-{
-	if (key == GLFW_KEY_W && action == GLFW_PRESS)
-	{
-		Position += speed * orientation;
-	}
-	else if (key == GLFW_KEY_A && action == GLFW_PRESS)
-	{
-		Position += speed * -glm::normalize(glm::cross(orientation, up));
-	}
-	else if (key == GLFW_KEY_S && action == GLFW_PRESS)
-	{
-		Position += speed * -orientation;
-	}
-	else if (key == GLFW_KEY_D && action == GLFW_PRESS)
-	{
-		Position += speed * glm::normalize(glm::cross(orientation, up));
-	}
-	else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-	{
-		Position += speed * up;
-	}
-	else if (key == GLFW_KEY_LEFT_CONTROL && action == GLFW_PRESS)
-	{
-		Position += speed * -up;
-	}
-	else if (key == GLFW_KEY_LEFT_SHIFT && action == GLFW_PRESS)
-	{
-		speed = 0.4f;
-	}
-	else if (key == GLFW_KEY_LEFT_SHIFT && action == GLFW_RELEASE)
-	{
-		speed = 0.1f;
-	}
-}
+

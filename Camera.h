@@ -32,7 +32,7 @@ public:
 
 	void Inputs(GLFWwindow* window);
 
-	void InputsCallback(int key,int action);
+	
 
 
 private:
