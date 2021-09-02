@@ -4,7 +4,7 @@
 #include"room.h"
 
 //Gouraud shading
-glm::vec2 bboxmax, bboxmin;
+glm::vec2 boxmax, boxmin;
 
 struct boundary
 {
@@ -29,115 +29,105 @@ glm::vec3 barycentricPoint(glm::vec4 vertex1, glm::vec4 vertex2, glm::vec4 verte
 	return glm::vec3(-1, 1, 1);
 }
 
-void gouraudShading(glm::vec4* pts, float* intensity, glm::vec3 kd)
+void gouraudShading(glm::vec4* points, float* intensity, glm::vec3 kd)
 {
-	bboxmin = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
-	bboxmax = { -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max() };
+	//glm::vec3 normal = glm::normalize(glm::cross(glm::vec3(points[1] - points[0]), glm::vec3(points[2] - points[0])));
+	//if ((glm::dot(normal, glm::vec3(points[0]) - camera.Position)) < 0)
+	//{
+		boxmin = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
+		boxmax = { -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max() };
+
+		for (int i = 0; i < 3; i++) {
+			//kinda redundant but cannot loop this
+			//takes x and y from lowest to highest value of triangle
+
+
+			boxmin.x = std::min(boxmin.x, points[i].x);
+			boxmax.x = std::max(boxmax.x, points[i].x);
+
+			boxmin.y = std::min(boxmin.y, points[i].y);
+			boxmax.y = std::max(boxmax.y, points[i].y);
+
+			boxmax.x = std::min(boxmax.x, (float)width);
+			boxmax.y = std::min(boxmax.y, (float)height);
+
+			boxmin.x = std::max(boxmin.x, 0.f);
+			boxmin.y = std::max(boxmin.y, 0.f);
+
+		}
+		glm::vec3 P;
+		glm::vec3 clr;
+		for (P.x = boxmin.x; P.x <= boxmax.x; P.x++)
+		{
+			for (P.y = boxmin.y; P.y <= boxmax.y; P.y++)
+			{
+				glm::vec3 bc_screen = barycentricPoint(points[0], points[1], points[2], P);
+				if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0) continue;
+
+				float it = (bc_screen.x) * intensity[0] + (bc_screen.y) * intensity[1] + (bc_screen.z) * intensity[2];
+				clr = kd + kd * it;
+				clr /= 2;
+				P.z = points[0].z * bc_screen.x + points[1].z * bc_screen.y + points[2].z * bc_screen.z + 100;
+				putpixel(P, clr);
+			}
+		}
+	//}
+}
+
+void PhongShading (glm::vec4* pts, triangle TriangularFace)
+{
+
+	boxmin = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
+	boxmax = { -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max() };
 
 	for (int i = 0; i < 3; i++) {
-		//kinda redundant but cannot loop this
-		//takes x and y from lowest to highest value of triangle
-		
+		boxmin.x = std::min(boxmin.x, pts[i].x);
+		boxmax.x = std::max(boxmax.x, pts[i].x);
 
-		bboxmin.x = std::min(bboxmin.x, pts[i].x);
-		bboxmax.x = std::max(bboxmax.x, pts[i].x);
+		boxmin.y = std::min(boxmin.y, pts[i].y);
+		boxmax.y = std::max(boxmax.y, pts[i].y);
 
-		bboxmin.y = std::min(bboxmin.y, pts[i].y);
-		bboxmax.y = std::max(bboxmax.y, pts[i].y);
+		boxmax.x = std::min(boxmax.x, (float)width);
+		boxmax.y = std::min(boxmax.y, (float)height);
 
-		bboxmax.x = std::min(bboxmax.x, (float)width);
-		bboxmax.y = std::min(bboxmax.y, (float)height);
-
-		bboxmin.x = std::max(bboxmin.x, 0.f);
-		bboxmin.y = std::max(bboxmin.y, 0.f);
+		boxmin.x = std::max(boxmin.x, 0.f);
+		boxmin.y = std::max(boxmin.y, 0.f);
 
 	}
 	glm::vec3 P;
 	glm::vec3 clr;
-	for (P.x = bboxmin.x; P.x <= bboxmax.x; P.x++)
+	for (P.x = boxmin.x; P.x <= boxmax.x; P.x++)
 	{
-		for (P.y = bboxmin.y; P.y <= bboxmax.y; P.y++)
+		for (P.y = boxmin.y; P.y <= boxmax.y; P.y++)
 		{
 			glm::vec3 bc_screen = barycentricPoint(pts[0], pts[1], pts[2], P);
 			if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0) continue;
-
-			float it = (bc_screen.x) * intensity[0] + (bc_screen.y) * intensity[1] + (bc_screen.z) * intensity[2];
-			clr = kd + kd * it;
-			clr /= 2;
 			P.z = pts[0].z * bc_screen.x + pts[1].z * bc_screen.y + pts[2].z * bc_screen.z + 100;
+			float ambient = 1;
+
+			glm::vec3 n =glm::normalize( TriangularFace.TriangleVertices[0].normal * (bc_screen.x) + TriangularFace.TriangleVertices[1].normal * (bc_screen.y) + TriangularFace.TriangleVertices[2].normal * (bc_screen.z));
+			
+
+			//float diffuse = glm::dot (n , glm::normalize(glm::normalize(glm::vec3(-1000,0,0))));
+			float diffuse = glm::dot(n, glm::normalize(glm::normalize(glm::vec3(pts[0])-lightPos)));
+
+			diffuse = glm::max(diffuse,0.0f);
+			//glm::vec3 ref = n * (2.0f * diffuse) - glm::normalize(glm::vec3(-1000,0,0));
+			glm::vec3 ref = n * (2.0f * diffuse) - glm::normalize(glm::vec3(pts[0]) - lightPos);
+			
+			int alpha = 0.2;
+			float specular = glm::max(std::pow(glm::dot(ref,camera.Position),alpha),0.0f);
+			
+			clr = (TriangularFace.mtl.kd * ambient) + ((TriangularFace.mtl.kd * diffuse)) + (TriangularFace.mtl.ks * specular);
+			clr /= 3;
+			clr.x = glm::max(clr.x,0.0f);
+			clr.y = glm::max(clr.y, 0.0f);
+			clr.z = glm::max(clr.z, 0.0f);
 			putpixel(P, clr);
 		}
 	}
 }
 
-
-void gouraudShading(triangle TriangularFace, glm::mat4 CameraMatrix)
-{
-	glm::vec4 vertex[3];
-	for(int i = 0; i<3;i++)
-	{
-		 vertex[i] = glm::vec4(TriangularFace.TriangleVertices[i].position, 1.0f);
-
-	}
-	//std::cout << "vertex =" << vertex[0].x<<"\n";
-	for (int i = 0; i < 3; i++)
-	{
-		vertex[i] = modelMatrix * CameraMatrix * vertex[i];
-		vertex[i].x = ((vertex[i].x / vertex[i].w) + 1) * width / 2 - width / 2;
-		vertex[i].y = ((vertex[i].y / vertex[i].w) + 1) * height / 2 - height / 2;
-	}
-	/*std::cout << "vertex[0].x=" << vertex[0].x << "\n";
-	std::cout << "vertex[0].w=" << vertex[0].w << "\n";
-	vertex[0].x = ((vertex[0].x / vertex[0].w) + 1) * width / 2 - width / 2;
-	std::cout << "vertex[0]=" << vertex[0].x<<"\n";
-	*/
-	float intensity[3];
-
-	intensity[0] = glm::dot(TriangularFace.TriangleVertices[0].normal, lightDir);
-	intensity[1] = glm::dot(TriangularFace.TriangleVertices[1].normal, lightDir);
-	intensity[2] = glm::dot(TriangularFace.TriangleVertices[2].normal, lightDir);
-
-	//std::cout << "vertex =" << vertex[0].x;
-	//std::cout << "normal = " << TriangularFace.TriangleVertices[0].normal.x << "\t" << TriangularFace.TriangleVertices[0].normal.y << "\t" << TriangularFace.TriangleVertices[0].normal.z << "\n";
-	//std::cout << "intensity[0]" << intensity[0]<<"\n";
-
-	for (int i = 0 ; i < 3 ; i++)
-	{
-		box.max.x = std::max(box.max.x, vertex[i].x);
-		box.min.x = std::min(box.min.x, vertex[i].x);
-
-		box.min.y = std::min(box.min.y, vertex[i].y);
-
-		box.max.x = std::min(box.max.x, (float)width);
-		box.max.y = std::min(box.max.y, (float)height);
-
-		box.min.x = std::max(box.min.x, -(float)width);
-		box.min.y = std::max(box.min.y, -(float)height);
-
-	}
-
-	glm::vec3 point;
-	glm::vec3 color;
-
-	
-
-	for (point.x=box.min.x;point.x<=box.max.x;point.x++)
-	{
-		for (point.y = box.min.y; point.y <= box.max.y; point.y++)
-		{
-			
-			glm::vec3 bPoint = barycentricPoint(vertex[0],vertex[1],vertex[2],point);
-
-
-			if (bPoint.x < 0 || bPoint.y < 0 || bPoint.z < 0 || bPoint.x<-(float)width || bPoint.y<-(float)height)
-				continue;
-			float inten = bPoint.x * intensity[0] + bPoint.y * intensity[1] + bPoint.z * intensity[2];
-			color = TriangularFace.mtl.kd + TriangularFace.mtl.kd * inten;
-			point.z = TriangularFace.TriangleVertices[0].position.z * bPoint.x + TriangularFace.TriangleVertices[1].position.z * bPoint.y + TriangularFace.TriangleVertices[2].position.z * bPoint.z + 100.0f;
-			putpixel_adjusted(point,color);
-		}
-	}
-}
 
 float minimum(float a, float b, float c)
 {
@@ -185,7 +175,7 @@ float computeGamma(glm::vec3 vertex1, glm::vec3 vertex2, glm::vec3 vertex3, glm:
 	return barycentricFunction(vertex1, vertex2, point.x, point.y) / barycentricFunction(vertex1, vertex2, vertex3.x, vertex3.y);
 }
 
-
+/*
 void rasterize(triangle TriangularFace, glm::mat4 CameraMatrix)
 {
 	glm::vec4 vertex1 = glm::vec4(TriangularFace.TriangleVertices[0].position, 1.0f);
@@ -237,5 +227,5 @@ void rasterize(triangle TriangularFace, glm::mat4 CameraMatrix)
 		}
 	}
 }
-
+*/
 #endif // !SHADER_H

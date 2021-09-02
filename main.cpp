@@ -6,11 +6,9 @@ int main(void)
 {
 	model room;
 	room.loadObj("object/room3.obj","object/room3.mtl");
-	//modelMatrix = glm::scale(modelMatrix, glm::vec3(5, 5, 5));
-
-
-	glm::vec3 point1 = glm::vec3(1,1,-1);
-	glm::vec3 point2 = glm::vec3(1,-1,-1);
+	
+	
+	modelMatrix = glm::translate(modelMatrix, glm::vec3(5, 5, 5));
 
 	// Initialize GLFW
 	if (!glfwInit())
@@ -58,27 +56,11 @@ int main(void)
 		for (int i = 0; i < room.TriangleData.size(); i++)
 		{
 			triangle TriangularFace = room.TriangleData.at(i);
-			//std::cout<<"\n"<<TriangularFace.TriangleVertices[0].normal.x;
-			//drawTriangle(TriangularFace,cameraMatrix);
-			//gouraudShading(TriangularFace,cameraMatrix);
-			//rasterizeByTriangle(TriangularFace,cameraMatrix);
 			draw(TriangularFace,cameraMatrix);
 		}
-		//putpixel_adjusted(glm::vec2(100,100),glm::vec3(1,0,0));
-		//triangle Triangularface = room.TriangleData.at(6);
-		//rasterize(Triangularface,cameraMatrix);
-		//rasterizeByTriangle(Triangularface,cameraMatrix);
-		//drawTriangle(Triangularface, cameraMatrix);
-		//gouraudShading(Triangularface,cameraMatrix);
-		//glm::vec4 temp1 = modelMatrix * cameraMatrix * (glm::vec4(point1,1.0f));
-		//glm::vec4 temp2 = modelMatrix * cameraMatrix * (glm::vec4(point2,1.0f));
-		
-		//line(100,100,200,200,glm::vec3(1,0,0));
-		//line(((temp1.x/temp1.w)+1)*width/2-width/2, ((temp1.y / temp1.w) + 1) * height / 2 - height / 2, ((temp2.x / temp2.w) + 1) * width / 2 - width / 2, ((temp2.y / temp2.w) + 1) * height / 2 - height / 2,glm::vec3(1,0,0));
-		//line(temp1, temp2, glm::vec3(1, 1, 0));
 		glDisable(GL_SMOOTH);
 		glDisableClientState(GL_VERTEX_ARRAY);
-		//drawGraph();
+		
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
@@ -89,7 +71,7 @@ int main(void)
 	return 0;
 }
 
-glm::vec4 transform(glm::vec4 vertex)
+glm::vec4 manage(glm::vec4 vertex)
 {
 	vertex.x = ((vertex.x / vertex.w) + 1) * width / 2 - width / 2;
 
@@ -100,17 +82,22 @@ glm::vec4 transform(glm::vec4 vertex)
 
 void draw(triangle TriangularFace,glm::mat4 CameraMatrix)
 {
+
 	glm::vec4 points[3];
 	float intensity[3];
 	for (int i = 0; i < 3; i++)
 	{
 		glm::vec4 v = glm:: vec4(TriangularFace.TriangleVertices[i].position, 1.0f);
-		v = modelMatrix * CameraMatrix * v;
-		points[i] = transform(v);
-		intensity[i] = glm::dot(TriangularFace.TriangleVertices[i].normal,lightDir);
+		v =  CameraMatrix * modelMatrix * v;
+		
+		points[i] = manage(v);
+		glm::vec3 lightDir = glm::normalize(glm::vec3(points[i])-lightPos);
+		//intensity[i] = glm::dot(TriangularFace.TriangleVertices[i].normal,lightDir);
+		intensity[i] = glm::max(glm::dot(TriangularFace.TriangleVertices[i].normal, lightDir), 0.0f);
+
 	}
-
-	gouraudShading(points,intensity,TriangularFace.mtl.kd);
-
-
+		
+	PhongShading(points, TriangularFace);
+	//gouraudShading(points, intensity, TriangularFace.mtl.kd);
+	//drawTriangle(points, TriangularFace.mtl.kd);
 }
