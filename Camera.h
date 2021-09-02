@@ -32,9 +32,10 @@ public:
 
 	void Inputs(GLFWwindow* window);
 
+	glm::mat4 lookAt(glm::vec3 eye, glm::vec3 center, glm::vec3 up);
+	glm::mat4 perspective(float fovy,float aspect,float zNear, float zFar);
+
 	
-
-
 private:
 
 };

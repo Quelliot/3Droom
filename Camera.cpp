@@ -9,6 +9,56 @@ Camera::Camera(int width, int height, glm::vec3 position)
 	Position = position;
 }
 
+glm::mat4 Camera::lookAt(const glm::vec3 eye,const glm::vec3 center, const glm::vec3 up)
+{
+	glm::mat4 Matrix = glm::mat4(1.0f);
+	glm::vec3 x, y, z;
+
+	z = glm::normalize(eye - center);
+	y = up;
+	x = glm::normalize(glm::cross(y,z));
+	y = glm::normalize(glm::cross(z,x));
+	
+	Matrix[0][0] = x.x;
+	Matrix[1][0] = x.y;
+	Matrix[2][0] = x.z;
+	Matrix[3][0] = glm::dot(-x,eye);
+	Matrix[0][1] = y.x;
+	Matrix[1][1] = y.y;
+	Matrix[2][1] = y.z;
+	Matrix[3][1] = glm::dot(-y,eye);;
+	Matrix[0][2] = z.x;
+	Matrix[1][2] = z.y;
+	Matrix[2][2] = z.z;
+	Matrix[3][2] = glm::dot(-z,eye);
+	Matrix[0][3] = 0;
+	Matrix[1][3] = 0;
+	Matrix[2][3] = 0;
+	Matrix[3][3] = 1.0f;
+
+	return Matrix;
+	
+
+}
+
+glm::mat4 Camera:: perspective(float fovy, float aspect, float zNear, float zFar)
+{
+	glm::mat4 Matrix = glm::mat4(0.0f);
+	if (aspect != 0 && zNear != zFar)
+	{
+		const float rad = fovy;
+		const float tanHalfRad = tan(rad/2);
+
+		Matrix[0][0] = 1 / (aspect * tanHalfRad);
+		Matrix[1][1] = 1 / tanHalfRad;
+		Matrix[2][2] = -(zFar + zNear) / (zFar - zNear);
+		Matrix[2][3] = -1;
+		Matrix[3][2] = -(2 * zFar * zNear) / (zFar - zNear);
+		
+		return Matrix;
+	}
+}
+
 glm::mat4 Camera::Matrix(float FOVdeg, float nearPlane, float farPlane)
 {
 	// Initializes matrices since otherwise they will be the null matrix
@@ -16,9 +66,13 @@ glm::mat4 Camera::Matrix(float FOVdeg, float nearPlane, float farPlane)
 	glm::mat4 projection = glm::mat4(1.0f);
 
 	// Makes camera look in the right direction from the right position
-	view = glm::lookAt(Position, Position + orientation, up);
+
+	//view = glm::lookAt(Position, Position + orientation, up);
+	view = lookAt(Position, Position + orientation, up);
+
 	// Adds perspective to the scene
-	projection = glm::perspective(glm::radians(FOVdeg), (float)width / height, nearPlane, farPlane);
+	//projection = glm::perspective(glm::radians(FOVdeg), (float)width / height, nearPlane, farPlane);
+	projection = perspective(glm::radians(FOVdeg), (float)width / height, nearPlane, farPlane);
 
 	// Sets new camera matrix
 	cameraMatrix = projection * view;
