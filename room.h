@@ -18,22 +18,20 @@
 #define width 800
 #define height 800
 
-bool* grid;
-float* zbuffer;
-glm::vec3* color;
 
 glm::vec3 BackgroundCol = glm::vec3(0.07f, 0.13f, 0.17f);
-glm::vec3 CameraPosition = glm::vec3(0, 5.0f, 50.0f);
+glm::vec3 CameraPosition = glm::vec3(0, 5.0f, 150.0f);
 
 Camera camera(width,height,CameraPosition);
 
 glm::vec3 lightPos = glm::vec3(0,0,0);
-glm::vec3 lightDir = glm::normalize(glm::vec3(-1000,200,0));
+//glm::vec3 lightDir = glm::normalize(glm::vec3(-800,200,0));
 glm::mat4 modelMatrix = glm::mat4(1.0f);
 
 
 void clear()
 {
+    
     glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT); 
     
@@ -45,10 +43,12 @@ void clear()
 
 void putpixel(glm::vec2 pixel, glm::vec3 color)
 {
-    glPointSize(1); // must be added before glDrawArrays is called
-    glColor3f(color.x, color.y, color.z);
-    glVertexPointer(2, GL_FLOAT, 0, &pixel); // point to the vertices to be used
-    glDrawArrays(GL_POINTS, 0, 1); // draw the vertixes
+        
+        glPointSize(1); // must be added before glDrawArrays is called
+        glColor3f(color.x, color.y, color.z);
+        glVertexPointer(2, GL_FLOAT, 0, &pixel); // point to the vertices to be used
+        glDrawArrays(GL_POINTS, 0, 1); // draw the vertixes
+    
 }
 
 void putpixel_adjusted(glm::vec2 pixel, glm::vec3 color)
@@ -150,11 +150,7 @@ void putpixel_adjusted(glm::vec3 point, glm::vec3 col)
  */
 void line(float x1, float y1, float x2, float y2, glm::vec3 color)
     {
-        /*x1 = (int)round(x1);
-        x2 = (int)round(x2);
-        y1 = (int)round(y1);
-        y2 = (int)round(y2);
-        */
+        
         float dx, dy;
 
         dx = abs(x2 - x1);
@@ -175,7 +171,7 @@ void line(float x1, float y1, float x2, float y2, glm::vec3 color)
             for (int k = 0; k <= dx; k++) {
                 //putpixel_adjusted(glm::vec3(x, y,INT_MAX), color);
                 //temp_putpixel_adjusted(glm::vec2(x,y),color);
-                putpixel_adjusted(glm::vec2(x, y), color);
+                putpixel_adjusted(glm::vec2(x, y),color);
                 if (p < 0) {
                     x += lx;
                     p += 2 * dy;
@@ -217,10 +213,7 @@ void line(glm::vec4 point1, glm::vec4 point2, glm::vec3 color)
     int x2 = (int)round(((point2.x/point2.w)+1) * width / 2 - width / 2);
     int y2 = (int)round(((point2.y/point2.w)+1) * height / 2 - height / 2);
 
-    /*std::cout << point1.x << "\n";
-    std::cout << point1.w << "\n";
-    std::cout << x1<<"\n";
-    */
+    
     float dx = abs(x2 - x1);
     float dy = abs(y2 - y1);
     //Sets increment/decrement : stepsize
@@ -272,30 +265,22 @@ void line(glm::vec4 point1, glm::vec4 point2, glm::vec3 color)
 
 }
 
-void drawTriangle(triangle TriangularFace, glm::mat4 CameraMatrix)
+
+void drawTriangle(glm::vec4* points, glm::vec3 kd)
 {
-    glm::vec3 normal = glm:: normalize(glm::cross(TriangularFace.TriangleVertices[1].position-TriangularFace.TriangleVertices[0].position, TriangularFace.TriangleVertices[2].position - TriangularFace.TriangleVertices[0].position));
-    if (glm::dot(normal, glm::vec3(TriangularFace.TriangleVertices[0].position - camera.Position)) < 0)
+    glm::vec3 normal = glm::normalize(glm::cross(glm::vec3(points[1] - points[0]), glm::vec3(points[2]-points[0])));
+    if ((glm::dot(normal, glm::vec3(points[0]) - camera.Position)) < 0)
     {
-        
-    
-        glm::vec4 vertex1 = glm::vec4(TriangularFace.TriangleVertices[0].position, 1.0f);
-        glm::vec4 vertex2 = glm::vec4(TriangularFace.TriangleVertices[1].position, 1.0f);
-        glm::vec4 vertex3 = glm::vec4(TriangularFace.TriangleVertices[2].position, 1.0f);
 
-        vertex1 = modelMatrix * CameraMatrix * vertex1;
-        vertex2 = modelMatrix * CameraMatrix * vertex2;
-        vertex3 = modelMatrix * CameraMatrix * vertex3;
 
-  
-
-        line(vertex1, vertex2, TriangularFace.mtl.kd);
-        line(vertex3, vertex2, TriangularFace.mtl.kd);
-        line(vertex1, vertex3, TriangularFace.mtl.kd);
+        line(points[1], points[0],kd);
+        line(points[2], points[1],kd);
+        line(points[1], points[2],kd);
     }
 }
 
-void fillBottomFlatTriangle(const glm::vec2& v1, const glm::vec2& v2, const glm::vec2& v3,
+
+void fillBottomFlatTriangle(const glm::vec4& v1, const glm::vec4& v2, const glm::vec4& v3,
     const glm::vec3& color) {
     float invslope1 = (v2.x - v1.x) / (v2.y - v1.y);
     float invslope2 = (v3.x - v1.x) / (v3.y - v1.y);
@@ -311,8 +296,8 @@ void fillBottomFlatTriangle(const glm::vec2& v1, const glm::vec2& v2, const glm:
     }
 }
 
-void fillTopFlatTriangle(const glm::vec2& v1, const glm::vec2& v2, const glm::vec2& v3,
-    const glm::vec3& color) {
+void fillTopFlatTriangle(const glm::vec4& v1, const glm::vec4& v2, const glm::vec4& v3,const glm::vec3& color)
+{
     float invslope1 = (v3.x - v1.x) / (v3.y - v1.y);
     float invslope2 = (v3.x - v2.x) / (v3.y - v2.y);
 
@@ -327,14 +312,13 @@ void fillTopFlatTriangle(const glm::vec2& v1, const glm::vec2& v2, const glm::ve
         currentx2 -= invslope2;
     }
 }
-glm::vec2 interpolate(const glm::vec2& src, const glm::vec2& dst, float alpha) {
+glm::vec4 interpolate(const glm::vec4& src, const glm::vec4& dst, float alpha) {
     return src + (dst - src) * alpha;
 }
-bool sortcol(const glm::vec2& v1, const glm::vec2& v2) { return v1.y < v2.y; }
+bool sortcol(const glm::vec4& v1, const glm::vec4& v2) { return v1.y < v2.y; }
 
 
-
-void rasterizeByTriangle(triangle TriangularFace, glm::mat4 CameraMatrix)
+/*void rasterizeByTriangle(triangle TriangularFace, glm::mat4 CameraMatrix)
 {
         
             glm::vec3 normal = glm::normalize(glm::cross(TriangularFace.TriangleVertices[1].position - TriangularFace.TriangleVertices[0].position, TriangularFace.TriangleVertices[2].position - TriangularFace.TriangleVertices[0].position));
@@ -397,10 +381,83 @@ void rasterizeByTriangle(triangle TriangularFace, glm::mat4 CameraMatrix)
 
             }
 
+}
+*/
 
-            
-       
+void rasterizeByTriangles(glm::vec4* points,glm::vec3 normal, glm:: vec3 kd, glm::vec3 ka)
+{
+        glm::vec3 color = kd;
+
+        glm::vec3 lightDir = glm::normalize(glm::vec3(points[0]) - lightPos);
+        float intensity = glm::max(glm::dot(lightDir, normal), 0.0f);
+        color = color * intensity;
+
+
+        std::vector<glm::vec4>pointsArray = std::vector<glm::vec4>(3);
+        for (int i = 0; i < 3; i++)
+        {
+            pointsArray[i] = points[i];
+        }
+        
+        std::sort(pointsArray.begin(),pointsArray.end(),sortcol);
+        if (points[0].y == points[1].y)
+        {
+            if (points[1].x < points[0].x)
+                std::swap(points[0], points[1]);
+            fillTopFlatTriangle(points[0], points[1], points[2], color);
+
+
+        }
+        else if (points[1].y == points[2].y)
+        {
+            if (points[2].x < points[1].x)
+                std::swap(points[1], points[2]);
+            fillBottomFlatTriangle(points[0], points[1], points[2], color);
+        }
+
+        else
+        {
+            float split = (points[1].y - points[0].y) / (points[2].y - points[0].y);
+            auto vi = interpolate(points[0], points[2], split);
+
+            if (points[1].x < vi.x)
+            {
+                fillBottomFlatTriangle(points[0], points[1], vi, color);
+                fillTopFlatTriangle(points[1], vi, points[2], color);
+            }
+            else
+            {
+                fillBottomFlatTriangle(points[0], vi, points[1], color);
+                fillTopFlatTriangle(vi, points[1], points[2], color);
+            }
+        }
+
+
+    
     
 }
+
+glm::mat4 translate(glm::mat4 matrix, glm::vec3 tvector)
+{
+    glm::mat4 result = matrix;
+    glm::mat4 m = matrix;
+    glm::vec3 v = tvector;
+    result[3] = m[0] * v[0] + m[1] * v[1] + m[2] * v[2] + m[3];
+    return result;
+}
+
+glm::mat4 scale(glm::mat4 matrix, glm::vec3 svector)
+{
+    glm::mat4 m = matrix;
+    glm::vec3 v = svector;
+    glm::mat4 Result = matrix;
+    Result[0] = m[0] * v[0];
+    Result[1] = m[1] * v[1];
+    Result[2] = m[2] * v[2];
+    Result[3] = m[3];
+    return Result;
+}
+
+
 #endif // !ROOM_H
 
